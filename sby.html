@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Sby</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="https://unpkg.com/vue@2.6.11/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://kit.fontawesome.com/4d5d34d37d.js" crossorigin="anonymous"></script>
+
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="row mt-5">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">User Table</h3>
+
+                            <div class="card-tools">
+                                <button class="btn btn-success" data-toggle="modal" data-target="#addNew"
+                                    @click="newModal">Add New <i class="fas fa-user-edit"></i></button>
+                            </div>
+
+                        </div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Posisi Awal</th>
+                                    <th>Posisi Akhir</th>
+                                    <th>Jumlah Kwh</th>
+                                    <th>/Meter</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(user, index) in users" :key="user.id">
+                                    <td>{{user.id}}</td>
+                                    <td>{{user.name}}</td>
+                                    <td>{{parseFloat(user.posisi_awal)}}</td>
+                                    <td>{{parseFloat(user.posisi_akhir)}}</td>
+                                    <td>{{parseFloat(user.jumlah_kwh)}}</td>
+                                    <td>{{meter}}</td>
+                                    <td>Rp. {{parseFloat(user.total)}}</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" @click="editModal(index)">
+                                            <i class="fas fa-edit blue"></i>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" @click="deletedData(index)">
+                                            <i class="fa fa-trash red"></i>
+                                        </button>
+
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal -->
+        <div class="modal fade" id="addNew" tabindex="-1" role="dialog" aria-labelledby="addNewLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addNewLabel">Add New</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form @submit.prevent="tambahUser">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <input v-model="form.name" type="text" name="name" id="name" class="form-control"
+                                    placeholder="Name" aria-describedby="helpId">
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <div class="form-group">
+                                        <input v-model="form.posisi_awal" type="text" name="awal" id="awal"
+                                            class="form-control" placeholder="" aria-describedby="helpId">
+                                        <small id="helpId" class="text-muted">Posisi Awal</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-group">
+                                        <input v-model="form.posisi_akhir" type="text" name="akhir" id="akhir"
+                                            class="form-control" placeholder="" aria-describedby="helpId">
+                                        <small id="helpId" class="text-muted">Posisi Akhir</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="form-group">
+                                        <input v-model="jmlKwh" type="text" class="form-control" placeholder=""
+                                            aria-describedby="helpId">
+                                        <small id="helpId" class="text-muted">Jumlah Kwh</small>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text">Rp.</div>
+                                        </div>
+                                        <input v-model="parseInt(subTotal)" type=" text" class="form-control"
+                                            placeholder="1.xxx.xxx">
+                                    </div>
+                                    <small id="helpId" class="text-muted">Total</small>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                                <input type="submit" class="btn btn-primary" value="Create" v-show="!buttonType">
+                                <input type="button" class="btn btn-primary" value="Update" v-show="buttonType"
+                                    @click="update">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    users: null,
+                    meter: 2000,
+                    form: {
+                        name: '',
+                        posisi_awal: 0,
+                        posisi_akhir: 0,
+                        jumlah_kwh: 0,
+                        total: 0
+                    },
+                    buttonType: false,
+                    editData: null,
+
+                }
+            },
+
+            computed: {
+                jmlKwh: {
+                    get() {
+                        if (
+                            parseFloat(this.form.posisi_akhir) < 1 || this.form.posisi_akhir == '' ||
+                            this.form.posisi_akhir == null) {
+                            return 0
+                        }
+                        return parseFloat(this.form.posisi_akhir) -
+                            parseFloat(this.form.posisi_awal)
+                    },
+
+                    set() {
+
+                        if (
+                            parseFloat(this.form.posisi_akhir) < 1 ||
+                            this.form.posisi_akhir == '' ||
+                            this.form.posisi_akhir == null) {
+                            return 0
+                        }
+
+                        return parseFloat(this.form.posisi_akhir) - parseFloat(this.form.posisi_awal)
+
+                    }
+
+                },
+                subTotal() {
+                    return parseFloat(this.jmlKwh) * parseInt(this.meter)
+
+                }
+            },
+
+
+            methods: {
+                jumlah() {
+
+                    index = this.users.findIndex(x => x.id == this.editData.id)
+                    let Akhir = this.users[index].posisi_akhir = this.form.posisi_akhir
+                    let Awal = this.users[index].posisi_awal = this.form.posisi_awal
+                    hasil = Akhir - Awal
+                    this.users[index].jumlah_kwh = this.form.jumlah_kwh = parseFloat(hasil).toFixed(2)
+
+
+                },
+                newModal() {
+                    $('#addNew').modal('show')
+                    this.form.name = '',
+                        this.form.posisi_awal = 0,
+                        this.form.posisi_akhir = 0,
+                        this.jmlKwh = 0,
+                        this.subTotal = 0
+                },
+
+                tambahUser() {
+                    axios.post('http://127.0.0.1:8000/api/surabaya', {
+                            name: this.form.name,
+                            posisi_awal: this.form.posisi_awal,
+                            posisi_akhir: this.form.posisi_akhir,
+                            jumlah_kwh: this.jmlKwh,
+                            total: this.subTotal
+                        })
+                        .then(res => {
+                            $('#addNew').modal('hide')
+                            let responServe = res.data.data
+                            this.form.name = '',
+                                this.form.posisi_awal = 0,
+                                this.form.posisi_akhir = 0,
+                                this.form.jumlah_kwh = 0,
+                                this.form.total = 0
+                            if (res.data.status) {
+                                this.users.push(responServe)
+                            }
+                            console.log(res)
+                        })
+                        .catch(err => {
+                            console.error(err);
+                        })
+                },
+                editModal(index) {
+                    $('#addNew').modal('show')
+                    let finduser = this.users[index]
+                    // var Akhir = this.form.posisi_akhir = finduser.posisi_akhir
+                    // var Awal = this.form.posisi_awal = finduser.posisi_awal
+                    // var hasil = Akhir - Awal
+                    // finduser.jumlah_kwh = parseFloat(hasil).toFixed(2)
+                    this.editData = finduser
+                    this.form.name = finduser.name
+                    this.form.posisi_awal = finduser.posisi_awal
+                    this.form.posisi_akhir = finduser.posisi_akhir
+                    this.form.jumlah_kwh = finduser.jumlah_kwh
+                    this.form.total = finduser.total
+                    this.buttonType = true
+                },
+                update() {
+                    this.jumlah()
+                    return axios.put('http://127.0.0.1:8000/api/surabayaupdate/' + this.editData.id, {
+                            name: this.form.name,
+                            posisi_awal: this.form.posisi_awal,
+                            posisi_akhir: this.form.posisi_akhir,
+                            jumlah_kwh: this.jmlKwh,
+                            total: this.subTotal,
+
+
+                        })
+                        .then(res => {
+
+                            $('#addNew').modal('hide')
+                            var index = this.users.findIndex(x => x.id == this.editData.id)
+
+                            this.users[index].name = this.form.name
+                            this.users[index].posisi_awal = this.form.posisi_awal
+                            this.users[index].posisi_akhir = this.form.posisi_akhir
+                            this.users[index].jumlah_kwh = this.jmlKwh
+                            this.users[index].total = this.subTotal
+
+                            // console.log(hasil)
+                            this.buttonType = false
+                            // ----------------------------------
+                            this.form.name = '',
+                                this.form.posisi_awal = 0,
+                                this.form.posisi_akhir = 0,
+                                this.form.jumlah_kwh = 0,
+                                this.form.total = 0
+                            this.editData = null
+
+                            console.log(res)
+                        })
+                        .catch(err => {
+                            console.error(err);
+                        })
+                },
+            },
+
+            mounted() {
+                axios.get('http://127.0.0.1:8000/api/surabaya')
+
+                    .then(res => {
+                        this.users = res.data.data
+                        console.log(res)
+                    })
+                    .catch(err => {
+                        console.error(err);
+                    })
+            },
+        })
+    </script>
+
+
+
+
+
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous">
+    </script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous">
+    </script>
+
+
+
+
+
+
+</body>
+
+</html>
